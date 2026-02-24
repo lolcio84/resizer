@@ -1,79 +1,294 @@
-{% load static %}
 <!DOCTYPE html>
-<html lang="pl">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TargetResizer - Precyzyjna Kompresja</title>
-    <link rel="stylesheet" href="{% static 'compressor/css/style.css' %}">
+    <title>TargetResizer | Exact Image Compression</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        /* CSS wbudowany dla pewności działania */
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg: #f3f4f6;
+            --surface: #ffffff;
+            --text: #1f2937;
+            --text-light: #6b7280;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .wrapper {
+            width: 100%;
+            max-width: 550px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-top: 2vh;
+        }
+
+        /* Reklamy */
+        .ad-space {
+            background: #e5e7eb;
+            border-radius: 16px;
+            height: 90px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #9ca3af;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* Główna Karta */
+        .card {
+            background: var(--surface);
+            padding: 40px;
+            border-radius: 24px;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.01);
+        }
+
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { margin: 0 0 5px 0; font-size: 2.2rem; color: var(--primary); font-weight: 800; letter-spacing: -1px; }
+        .header p { margin: 0; color: var(--text-light); font-size: 0.95rem; }
+
+        /* Strefa Drag & Drop */
+        .drop-zone {
+            border: 2px dashed #cbd5e1;
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: #f8fafc;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 220px;
+            overflow: hidden;
+        }
+
+        .drop-zone.dragover { border-color: var(--primary); background: #eff6ff; }
+        .drop-zone:hover { border-color: #94a3b8; }
+        
+        .drop-zone-content { pointer-events: none; }
+        .drop-zone-content .icon { font-size: 3rem; margin-bottom: 10px; display: block; }
+        .drop-zone-content p { margin: 0; font-weight: 600; color: var(--text-light); }
+        .drop-zone-content span { font-size: 0.8rem; font-weight: 400; color: #94a3b8; }
+
+        .preview-img {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 8px;
+            display: none;
+            object-fit: contain;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        .file-info { text-align: center; font-size: 0.85rem; color: var(--text-light); margin-top: 10px; font-weight: 600; }
+
+        /* Ustawienia i przyciski */
+        .controls { margin-top: 30px; display: flex; flex-direction: column; gap: 15px; }
+        .input-group label { font-weight: 600; font-size: 0.9rem; margin-bottom: 8px; display: block; }
+        
+        .action-row { display: flex; gap: 10px; }
+        .action-row input {
+            flex: 1;
+            padding: 14px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            outline: none;
+            transition: border 0.2s;
+            text-align: center;
+            font-weight: 600;
+        }
+        .action-row input:focus { border-color: var(--primary); }
+        
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 0 30px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+        }
+        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-2px); }
+        
+        .result-area { display: none; margin-top: 20px; text-align: center; }
+        .status-text { font-weight: 600; margin-bottom: 15px; }
+        
+        .btn-success {
+            background: #10b981;
+            color: white;
+            text-decoration: none;
+            display: block;
+            padding: 16px;
+            border-radius: 12px;
+            font-weight: 700;
+            transition: background 0.2s;
+        }
+        .btn-success:hover { background: #059669; }
+
+        /* Kafelki z cechami */
+        .features { display: flex; gap: 15px; margin-top: 20px; }
+        .feature {
+            flex: 1;
+            background: var(--surface);
+            padding: 20px 15px;
+            border-radius: 20px;
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-light);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+        .feature span { display: block; font-size: 1.5rem; margin-bottom: 8px; }
+
+        .footer { text-align: center; color: #9ca3af; font-size: 0.8rem; margin-top: 20px; padding-bottom: 20px; }
+
+        /* Responsywność dla telefonów */
+        @media(max-width: 500px) {
+            .card { padding: 25px 20px; }
+            .action-row { flex-direction: column; }
+            .btn-primary { padding: 16px; }
+            .features { flex-direction: column; }
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1>TargetResizer</h1>
-        
-        <input type="file" id="imageInput" accept="image/jpeg, image/png" onchange="previewFile()">
-        
-        <div class="preview-box" id="previewContainer">
-            <span id="placeholder">Podgląd zdjęcia</span>
-            <img src="" id="previewImg">
-        </div>
-        
-        <div id="fileInfo" class="info"></div>
 
-        <div class="input-group">
-            <label>Maksymalny rozmiar (MB):</label>
-            <input type="number" id="targetSize" value="9.99" step="0.01" min="0.01">
+    <div class="wrapper">
+        <div class="ad-space">Advertisement</div>
+
+        <main class="card">
+            <header class="header">
+                <h1>TargetResizer</h1>
+                <p>Resize images to your exact file size limit</p>
+            </header>
+
+            <div id="dropZone" class="drop-zone">
+                <input type="file" id="fileInput" accept="image/jpeg, image/png" style="display:none;">
+                <div id="dropContent" class="drop-zone-content">
+                    <span class="icon">📁</span>
+                    <p>Drag & drop photo here</p>
+                    <span>or click to browse</span>
+                </div>
+                <img id="previewImg" class="preview-img">
+            </div>
+            <div id="fileInfo" class="file-info"></div>
+
+            <div class="controls">
+                <div class="input-group">
+                    <label for="targetSize">Target File Size (KB):</label>
+                    <div class="action-row">
+                        <input type="number" id="targetSize" value="500" step="1" min="1">
+                        <button class="btn-primary" onclick="compressImage()">Compress</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="resultArea" class="result-area">
+                <div id="status" class="status-text"></div>
+                <a id="downloadBtn" class="btn-success">Download Image</a>
+            </div>
+        </main>
+
+        <div class="features">
+            <div class="feature"><span>🔒</span><strong>Private</strong><br>Processed locally</div>
+            <div class="feature"><span>🎯</span><strong>Precise</strong><br>Exact file size</div>
+            <div class="feature"><span>🚀</span><strong>Fast</strong><br>No uploads needed</div>
         </div>
 
-        <button onclick="compressImage()">Dociśnij do limitu</button>
-        
-        <div id="status"></div>
-        <a id="downloadBtn">Pobierz wynik</a>
+        <div class="ad-space">Advertisement</div>
+
+        <footer class="footer">
+            &copy; 2026 TargetResizer. All rights reserved.
+        </footer>
     </div>
 
     <script>
-        function previewFile() {
-            const file = document.getElementById('imageInput').files[0];
-            const preview = document.getElementById('previewImg');
-            const placeholder = document.getElementById('placeholder');
-            const info = document.getElementById('fileInfo');
+        // --- LOGIKA DRAG & DROP ---
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const previewImg = document.getElementById('previewImg');
+        const dropContent = document.getElementById('dropContent');
+        const fileInfo = document.getElementById('fileInfo');
+        let selectedFile = null;
 
-            if (file) {
-                const reader = new FileReader();
-                reader.onloadend = function() {
-                    preview.src = reader.result;
-                    preview.style.display = 'block';
-                    placeholder.style.display = 'none';
-                    info.innerText = `Oryginalny rozmiar: ${(file.size / 1024 / 1024).toFixed(3)} MB`;
-                }
-                reader.readAsDataURL(file);
+        // Kliknięcie w strefę otwiera okno wyboru
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        // Połączenie wyboru pliku z podglądem
+        fileInput.addEventListener('change', function() {
+            if(this.files.length > 0) handleFile(this.files[0]);
+        });
+
+        // Efekty najechania plikiem (Drag & Drop)
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        // Upuszczenie pliku
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            if(e.dataTransfer.files.length > 0) {
+                fileInput.files = e.dataTransfer.files; // Przekazanie do ukrytego inputa
+                handleFile(e.dataTransfer.files[0]);
             }
+        });
+
+        function handleFile(file) {
+            selectedFile = file;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImg.src = e.target.result;
+                previewImg.style.display = 'block';
+                dropContent.style.display = 'none'; // Ukrycie tekstu "Drag & drop"
+                // Zmiana na KB: dzielone tylko przez 1024
+                fileInfo.innerText = `Original Size: ${(file.size / 1024).toFixed(1)} KB`;
+            }
+            reader.readAsDataURL(file);
         }
 
+        // --- LOGIKA KOMPRESJI ---
         async function compressImage() {
-            const fileInput = document.getElementById('imageInput');
-            const file = fileInput.files[0];
-            const targetMB = parseFloat(document.getElementById('targetSize').value);
+            // Pobranie wartości w KB
+            const targetKB = parseFloat(document.getElementById('targetSize').value);
             const status = document.getElementById('status');
+            const resultArea = document.getElementById('resultArea');
             const dlBtn = document.getElementById('downloadBtn');
 
-            if (!file) { alert("Najpierw wrzuć zdjęcie!"); return; }
+            if (!selectedFile) { alert("Please select or drop an image first!"); return; }
 
-            const originalSizeMB = file.size / 1024 / 1024;
-            
-            if (originalSizeMB <= targetMB) {
-                status.style.color = "#28a745";
-                status.innerText = "Plik już spełnia wymagania!";
-                const url = URL.createObjectURL(file);
-                setupDownload(url, file.name, originalSizeMB);
-                return;
-            }
-
-            status.style.color = "#666";
-            status.innerText = "Trwa precyzyjna kompresja...";
+            resultArea.style.display = 'block';
+            status.style.color = "#6b7280";
+            status.innerText = "Processing image...";
             dlBtn.style.display = 'none';
 
-            const bitmap = await createImageBitmap(file);
+            const bitmap = await createImageBitmap(selectedFile);
             const canvas = document.createElement('canvas');
             canvas.width = bitmap.width;
             canvas.height = bitmap.height;
@@ -82,30 +297,27 @@
 
             let quality = 1.0;
             let blob;
-            let currentSize = 0;
+            let currentSizeKB = 0;
 
+            // Pętla kompresji
             while (quality > 0.01) {
                 blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
-                currentSize = blob.size / 1024 / 1024;
+                // Obliczenie rozmiaru w KB
+                currentSizeKB = blob.size / 1024;
                 
-                if (currentSize <= targetMB) {
-                    break;
-                }
-                quality -= 0.02;
+                // Jeśli osiągnęliśmy cel (lub jesteśmy poniżej), przerwij pętlę
+                if (currentSizeKB <= targetKB) break;
+                
+                // Zmniejsz jakość
+                quality -= 0.03;
             }
 
-            status.style.color = "#28a745";
-            status.innerText = "Gotowe!";
-            const url = URL.createObjectURL(blob);
-            setupDownload(url, file.name, currentSize);
-        }
-
-        function setupDownload(url, originalName, size) {
-            const dlBtn = document.getElementById('downloadBtn');
-            dlBtn.href = url;
-            dlBtn.download = `compressed_${size.toFixed(2)}MB_${originalName.split('.')[0]}.jpg`;
+            status.style.color = "#10b981";
+            status.innerText = `Success! Target reached.`;
+            dlBtn.href = URL.createObjectURL(blob);
+            dlBtn.download = `target_resizer_${currentSizeKB.toFixed(0)}KB.jpg`;
+            dlBtn.innerText = `Download (${currentSizeKB.toFixed(1)} KB)`;
             dlBtn.style.display = 'block';
-            dlBtn.innerText = `Pobierz (${size.toFixed(2)} MB)`;
         }
     </script>
 </body>
