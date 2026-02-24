@@ -1,0 +1,112 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TargetResizer - Precyzyjna Kompresja</title>
+    <link rel="stylesheet" href="{% static 'compressor/css/style.css' %}">
+</head>
+<body>
+    <div class="container">
+        <h1>TargetResizer</h1>
+        
+        <input type="file" id="imageInput" accept="image/jpeg, image/png" onchange="previewFile()">
+        
+        <div class="preview-box" id="previewContainer">
+            <span id="placeholder">Podgląd zdjęcia</span>
+            <img src="" id="previewImg">
+        </div>
+        
+        <div id="fileInfo" class="info"></div>
+
+        <div class="input-group">
+            <label>Maksymalny rozmiar (MB):</label>
+            <input type="number" id="targetSize" value="9.99" step="0.01" min="0.01">
+        </div>
+
+        <button onclick="compressImage()">Dociśnij do limitu</button>
+        
+        <div id="status"></div>
+        <a id="downloadBtn">Pobierz wynik</a>
+    </div>
+
+    <script>
+        function previewFile() {
+            const file = document.getElementById('imageInput').files[0];
+            const preview = document.getElementById('previewImg');
+            const placeholder = document.getElementById('placeholder');
+            const info = document.getElementById('fileInfo');
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onloadend = function() {
+                    preview.src = reader.result;
+                    preview.style.display = 'block';
+                    placeholder.style.display = 'none';
+                    info.innerText = `Oryginalny rozmiar: ${(file.size / 1024 / 1024).toFixed(3)} MB`;
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        async function compressImage() {
+            const fileInput = document.getElementById('imageInput');
+            const file = fileInput.files[0];
+            const targetMB = parseFloat(document.getElementById('targetSize').value);
+            const status = document.getElementById('status');
+            const dlBtn = document.getElementById('downloadBtn');
+
+            if (!file) { alert("Najpierw wrzuć zdjęcie!"); return; }
+
+            const originalSizeMB = file.size / 1024 / 1024;
+            
+            if (originalSizeMB <= targetMB) {
+                status.style.color = "#28a745";
+                status.innerText = "Plik już spełnia wymagania!";
+                const url = URL.createObjectURL(file);
+                setupDownload(url, file.name, originalSizeMB);
+                return;
+            }
+
+            status.style.color = "#666";
+            status.innerText = "Trwa precyzyjna kompresja...";
+            dlBtn.style.display = 'none';
+
+            const bitmap = await createImageBitmap(file);
+            const canvas = document.createElement('canvas');
+            canvas.width = bitmap.width;
+            canvas.height = bitmap.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(bitmap, 0, 0);
+
+            let quality = 1.0;
+            let blob;
+            let currentSize = 0;
+
+            while (quality > 0.01) {
+                blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
+                currentSize = blob.size / 1024 / 1024;
+                
+                if (currentSize <= targetMB) {
+                    break;
+                }
+                quality -= 0.02;
+            }
+
+            status.style.color = "#28a745";
+            status.innerText = "Gotowe!";
+            const url = URL.createObjectURL(blob);
+            setupDownload(url, file.name, currentSize);
+        }
+
+        function setupDownload(url, originalName, size) {
+            const dlBtn = document.getElementById('downloadBtn');
+            dlBtn.href = url;
+            dlBtn.download = `compressed_${size.toFixed(2)}MB_${originalName.split('.')[0]}.jpg`;
+            dlBtn.style.display = 'block';
+            dlBtn.innerText = `Pobierz (${size.toFixed(2)} MB)`;
+        }
+    </script>
+</body>
+</html>
