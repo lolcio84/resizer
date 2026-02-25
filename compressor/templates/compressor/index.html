@@ -1,324 +1,569 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TargetResizer | Exact Image Compression</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <title>TargetResizer</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet">
     <style>
-        /* CSS wbudowany dla pewności działania */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
         :root {
-            --primary: #2563eb;
-            --primary-hover: #1d4ed8;
-            --bg: #f3f4f6;
-            --surface: #ffffff;
-            --text: #1f2937;
-            --text-light: #6b7280;
+            --bg: #0d0f12;
+            --surface: #161a20;
+            --surface-2: #1e2329;
+            --border: rgba(255,255,255,0.07);
+            --accent: #5cffb0;
+            --accent-dim: rgba(92,255,176,0.12);
+            --accent-mid: rgba(92,255,176,0.4);
+            --text: #f0f2f5;
+            --text-muted: #6b7585;
+            --text-mid: #9ba3b0;
+            --danger: #ff5c5c;
+            --radius: 20px;
         }
 
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg);
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
             color: var(--text);
-            margin: 0;
-            padding: 20px;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-height: 100vh;
-            box-sizing: border-box;
+            padding: 40px 20px 60px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Ambient background blobs */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -200px; left: -200px;
+            width: 600px; height: 600px;
+            background: radial-gradient(circle, rgba(92,255,176,0.06) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        body::after {
+            content: '';
+            position: fixed;
+            bottom: -200px; right: -100px;
+            width: 500px; height: 500px;
+            background: radial-gradient(circle, rgba(92,255,176,0.04) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
         }
 
         .wrapper {
             width: 100%;
-            max-width: 550px;
+            max-width: 780px;
             display: flex;
             flex-direction: column;
-            gap: 20px;
-            margin-top: 2vh;
+            gap: 16px;
+            position: relative;
+            z-index: 1;
         }
 
-        /* Reklamy */
-        .ad-space {
-            background: #e5e7eb;
-            border-radius: 16px;
-            height: 90px;
+        /* Header */
+        .header {
             display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #9ca3af;
-            font-size: 0.8rem;
-            letter-spacing: 1px;
+            align-items: flex-end;
+            justify-content: space-between;
+            padding: 0 4px 24px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 8px;
+            animation: fadeSlideDown 0.5s ease both;
+        }
+        .header-left {}
+        .logo {
+            font-family: 'Syne', sans-serif;
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--text);
+            letter-spacing: -0.03em;
+            line-height: 1;
+        }
+        .logo span { color: var(--accent); }
+        .tagline {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            margin-top: 6px;
+            letter-spacing: 0.01em;
+        }
+        .badge {
+            font-size: 0.7rem;
+            font-weight: 600;
+            background: var(--accent-dim);
+            color: var(--accent);
+            border: 1px solid rgba(92,255,176,0.2);
+            padding: 5px 12px;
+            border-radius: 100px;
+            letter-spacing: 0.05em;
             text-transform: uppercase;
         }
 
-        /* Główna Karta */
+        /* Card */
         .card {
             background: var(--surface);
-            padding: 40px;
-            border-radius: 24px;
-            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.01);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 32px;
+            animation: fadeSlideUp 0.5s ease both;
         }
+        .card:nth-child(2) { animation-delay: 0.05s; }
+        .card:nth-child(3) { animation-delay: 0.1s; }
 
-        .header { text-align: center; margin-bottom: 30px; }
-        .header h1 { margin: 0 0 5px 0; font-size: 2.2rem; color: var(--primary); font-weight: 800; letter-spacing: -1px; }
-        .header p { margin: 0; color: var(--text-light); font-size: 0.95rem; }
-
-        /* Strefa Drag & Drop */
+        /* Drop Zone */
         .drop-zone {
-            border: 2px dashed #cbd5e1;
-            border-radius: 16px;
-            padding: 20px;
+            border: 1.5px dashed rgba(255,255,255,0.12);
+            border-radius: 14px;
+            padding: 36px 20px;
             text-align: center;
             cursor: pointer;
-            transition: all 0.2s ease;
-            background: #f8fafc;
-            position: relative;
+            background: var(--surface-2);
+            min-height: 160px;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 220px;
+            transition: border-color 0.2s, background 0.2s;
+            position: relative;
             overflow: hidden;
         }
+        .drop-zone::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at center, var(--accent-dim) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .drop-zone:hover, .drop-zone.active {
+            border-color: var(--accent-mid);
+            background: rgba(92,255,176,0.04);
+        }
+        .drop-zone:hover::before, .drop-zone.active::before { opacity: 1; }
 
-        .drop-zone.dragover { border-color: var(--primary); background: #eff6ff; }
-        .drop-zone:hover { border-color: #94a3b8; }
-        
-        .drop-zone-content { pointer-events: none; }
-        .drop-zone-content .icon { font-size: 3rem; margin-bottom: 10px; display: block; }
-        .drop-zone-content p { margin: 0; font-weight: 600; color: var(--text-light); }
-        .drop-zone-content span { font-size: 0.8rem; font-weight: 400; color: #94a3b8; }
+        .drop-icon {
+            width: 48px; height: 48px;
+            margin: 0 auto 14px;
+            background: var(--accent-dim);
+            border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            border: 1px solid rgba(92,255,176,0.2);
+        }
+        .drop-icon svg { width: 22px; height: 22px; stroke: var(--accent); }
+        .drop-title { font-size: 0.95rem; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+        .drop-sub { font-size: 0.78rem; color: var(--text-muted); }
+        .drop-sub span { color: var(--accent); font-weight: 600; }
 
-        .preview-img {
-            max-width: 100%;
-            max-height: 300px;
-            border-radius: 8px;
+        /* Preview */
+        .preview-container {
             display: none;
-            object-fit: contain;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-top: 20px;
         }
 
-        .file-info { text-align: center; font-size: 0.85rem; color: var(--text-light); margin-top: 10px; font-weight: 600; }
-
-        /* Ustawienia i przyciski */
-        .controls { margin-top: 30px; display: flex; flex-direction: column; gap: 15px; }
-        .input-group label { font-weight: 600; font-size: 0.9rem; margin-bottom: 8px; display: block; }
-        
-        .action-row { display: flex; gap: 10px; }
-        .action-row input {
-            flex: 1;
-            padding: 14px;
-            border: 2px solid #e5e7eb;
-            border-radius: 12px;
-            font-size: 1.1rem;
-            outline: none;
-            transition: border 0.2s;
-            text-align: center;
+        .preview-box {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            overflow: hidden;
+        }
+        .preview-box-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border);
+        }
+        .preview-label {
+            font-size: 0.7rem;
             font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
         }
-        .action-row input:focus { border-color: var(--primary); }
-        
-        .btn-primary {
-            background: var(--primary);
-            color: white;
+        .preview-size {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-mid);
+        }
+        .preview-size.success { color: var(--accent); }
+        .preview-box img {
+            width: 100%;
+            height: 180px;
+            object-fit: contain;
+            display: block;
+            background: #0d0f12;
+        }
+
+        /* Controls */
+        .controls {
+            margin-top: 24px;
+            display: flex;
+            align-items: flex-end;
+            gap: 12px;
+        }
+
+        .input-group {
+            flex: 1;
+        }
+        .input-group label {
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 8px;
+        }
+
+        .input-wrap {
+            position: relative;
+        }
+        .input-wrap input {
+            width: 100%;
+            padding: 13px 48px 13px 16px;
+            background: var(--surface-2);
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            color: var(--text);
+            font-size: 1rem;
+            font-weight: 600;
+            font-family: 'DM Sans', sans-serif;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .input-wrap input:focus { border-color: var(--accent-mid); }
+        .input-unit {
+            position: absolute;
+            right: 14px; top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            letter-spacing: 0.04em;
+        }
+
+        .btn-compress {
+            background: var(--accent);
+            color: #0d0f12;
             border: none;
             border-radius: 12px;
-            padding: 0 30px;
+            padding: 0 28px;
+            height: 48px;
+            font-size: 0.88rem;
             font-weight: 700;
-            font-size: 1rem;
+            font-family: 'DM Sans', sans-serif;
             cursor: pointer;
-            transition: background 0.2s, transform 0.1s;
+            white-space: nowrap;
+            transition: opacity 0.2s, transform 0.15s, background 0.2s;
+            letter-spacing: 0.01em;
         }
-        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-2px); }
-        
-        .result-area { display: none; margin-top: 20px; text-align: center; }
-        .status-text { font-weight: 600; margin-bottom: 15px; }
-        
-        .btn-success {
-            background: #10b981;
-            color: white;
-            text-decoration: none;
-            display: block;
+        .btn-compress:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
+        .btn-compress:active:not(:disabled) { transform: translateY(0); }
+        .btn-compress:disabled { background: var(--surface-2); color: var(--text-muted); cursor: not-allowed; border: 1.5px solid var(--border); }
+
+        /* Result */
+        .result-area {
+            display: none;
+            margin-top: 20px;
             padding: 16px;
+            background: var(--accent-dim);
+            border: 1px solid rgba(92,255,176,0.2);
             border-radius: 12px;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            animation: fadeSlideUp 0.3s ease both;
+        }
+        .result-text {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .result-dot {
+            width: 8px; height: 8px;
+            background: var(--accent);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--accent);
+            animation: pulse 2s infinite;
+        }
+        .result-label { font-size: 0.88rem; font-weight: 600; color: var(--accent); }
+        #status { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; }
+
+        .btn-download {
+            background: var(--accent);
+            color: #0d0f12;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 0.82rem;
             font-weight: 700;
-            transition: background 0.2s;
+            font-family: 'DM Sans', sans-serif;
+            white-space: nowrap;
+            transition: opacity 0.2s, transform 0.15s;
         }
-        .btn-success:hover { background: #059669; }
+        .btn-download:hover { opacity: 0.88; transform: translateY(-1px); }
+        .btn-download svg { width: 14px; height: 14px; stroke: #0d0f12; }
 
-        /* Kafelki z cechami */
-        .features { display: flex; gap: 15px; margin-top: 20px; }
-        .feature {
-            flex: 1;
-            background: var(--surface);
-            padding: 20px 15px;
-            border-radius: 20px;
+        /* Progress bar while compressing */
+        .progress-bar-wrap {
+            display: none;
+            height: 3px;
+            background: var(--border);
+            border-radius: 3px;
+            margin-top: 16px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: var(--accent);
+            border-radius: 3px;
+            transition: width 0.2s;
+            animation: progressIndeterminate 1.5s ease-in-out infinite;
+        }
+        @keyframes progressIndeterminate {
+            0% { transform: translateX(-100%); width: 50%; }
+            100% { transform: translateX(250%); width: 50%; }
+        }
+
+        /* Footer */
+        .footer {
             text-align: center;
-            font-size: 0.8rem;
-            color: var(--text-light);
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            margin-top: 16px;
+            animation: fadeSlideUp 0.5s 0.15s ease both;
+            opacity: 0;
+            animation-fill-mode: forwards;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
         }
-        .feature span { display: block; font-size: 1.5rem; margin-bottom: 8px; }
+        .footer-dot { color: var(--accent); }
 
-        .footer { text-align: center; color: #9ca3af; font-size: 0.8rem; margin-top: 20px; padding-bottom: 20px; }
+        /* Animations */
+        @keyframes fadeSlideDown {
+            from { opacity: 0; transform: translateY(-16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeSlideUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
 
-        /* Responsywność dla telefonów */
-        @media(max-width: 500px) {
-            .card { padding: 25px 20px; }
-            .action-row { flex-direction: column; }
-            .btn-primary { padding: 16px; }
-            .features { flex-direction: column; }
+        @media(max-width: 580px) {
+            .card { padding: 22px; }
+            .preview-container { grid-template-columns: 1fr; }
+            .controls { flex-direction: column; align-items: stretch; }
+            .btn-compress { width: 100%; height: 50px; }
+            .logo { font-size: 1.6rem; }
         }
     </style>
 </head>
 <body>
 
-    <div class="wrapper">
-        <div class="ad-space">Advertisement</div>
+<div class="wrapper">
 
-        <main class="card">
-            <header class="header">
-                <h1>TargetResizer</h1>
-                <p>Resize images to your exact file size limit</p>
-            </header>
-
-            <div id="dropZone" class="drop-zone">
-                <input type="file" id="fileInput" accept="image/jpeg, image/png" style="display:none;">
-                <div id="dropContent" class="drop-zone-content">
-                    <span class="icon">📁</span>
-                    <p>Drag & drop photo here</p>
-                    <span>or click to browse</span>
-                </div>
-                <img id="previewImg" class="preview-img">
-            </div>
-            <div id="fileInfo" class="file-info"></div>
-
-            <div class="controls">
-                <div class="input-group">
-                    <label for="targetSize">Target File Size (KB):</label>
-                    <div class="action-row">
-                        <input type="number" id="targetSize" value="500" step="1" min="1">
-                        <button class="btn-primary" onclick="compressImage()">Compress</button>
-                    </div>
-                </div>
-            </div>
-
-            <div id="resultArea" class="result-area">
-                <div id="status" class="status-text"></div>
-                <a id="downloadBtn" class="btn-success">Download Image</a>
-            </div>
-        </main>
-
-        <div class="features">
-            <div class="feature"><span>🔒</span><strong>Private</strong><br>Processed locally</div>
-            <div class="feature"><span>🎯</span><strong>Precise</strong><br>Exact file size</div>
-            <div class="feature"><span>🚀</span><strong>Fast</strong><br>No uploads needed</div>
+    <div class="header">
+        <div class="header-left">
+            <div class="logo">Target<span>Resizer</span></div>
+            <div class="tagline">Ustaw dokładną wagę zdjęcia w KB</div>
         </div>
-
-        <div class="ad-space">Advertisement</div>
-
-        <footer class="footer">
-            &copy; 2026 TargetResizer. All rights reserved.
-        </footer>
+        <div class="badge">🔒 100% lokalnie</div>
     </div>
 
-    <script>
-        // --- LOGIKA DRAG & DROP ---
-        const dropZone = document.getElementById('dropZone');
-        const fileInput = document.getElementById('fileInput');
-        const previewImg = document.getElementById('previewImg');
-        const dropContent = document.getElementById('dropContent');
-        const fileInfo = document.getElementById('fileInfo');
-        let selectedFile = null;
+    <div class="card">
+        <!-- Drop Zone -->
+        <div id="dropZone" class="drop-zone">
+            <input type="file" id="fileInput" accept="image/*" style="display:none;">
+            <div id="dropContent">
+                <div class="drop-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                </div>
+                <div class="drop-title">Przeciągnij lub kliknij, aby wybrać</div>
+                <div class="drop-sub">Obsługiwane formaty: <span>JPG, PNG, WEBP</span></div>
+            </div>
+        </div>
 
-        // Kliknięcie w strefę otwiera okno wyboru
-        dropZone.addEventListener('click', () => fileInput.click());
+        <!-- Preview -->
+        <div id="previewContainer" class="preview-container">
+            <div class="preview-box">
+                <div class="preview-box-header">
+                    <div class="preview-label">Oryginał</div>
+                    <div id="originalInfo" class="preview-size"></div>
+                </div>
+                <img id="originalImg" alt="Original">
+            </div>
+            <div class="preview-box">
+                <div class="preview-box-header">
+                    <div class="preview-label">Po kompresji</div>
+                    <div id="compressedInfo" class="preview-size success"></div>
+                </div>
+                <img id="compressedImg" alt="Compressed">
+            </div>
+        </div>
 
-        // Połączenie wyboru pliku z podglądem
-        fileInput.addEventListener('change', function() {
-            if(this.files.length > 0) handleFile(this.files[0]);
-        });
+        <!-- Progress -->
+        <div class="progress-bar-wrap" id="progressWrap">
+            <div class="progress-bar"></div>
+        </div>
 
-        // Efekty najechania plikiem (Drag & Drop)
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.classList.add('dragover');
-        });
+        <!-- Controls -->
+        <div class="controls">
+            <div class="input-group">
+                <label>Docelowy rozmiar</label>
+                <div class="input-wrap">
+                    <input type="number" id="targetSize" value="200" min="1">
+                    <div class="input-unit">KB</div>
+                </div>
+            </div>
+            <button id="compressBtn" class="btn-compress" onclick="processImage()">Kompresuj</button>
+        </div>
 
-        dropZone.addEventListener('dragleave', () => {
-            dropZone.classList.remove('dragover');
-        });
+        <!-- Result -->
+        <div id="resultArea" class="result-area">
+            <div class="result-text">
+                <div class="result-dot"></div>
+                <div>
+                    <div class="result-label">Gotowe!</div>
+                    <div id="status"></div>
+                </div>
+            </div>
+            <a id="downloadBtn" class="btn-download">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Pobierz plik
+            </a>
+        </div>
+    </div>
 
-        // Upuszczenie pliku
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('dragover');
-            if(e.dataTransfer.files.length > 0) {
-                fileInput.files = e.dataTransfer.files; // Przekazanie do ukrytego inputa
-                handleFile(e.dataTransfer.files[0]);
-            }
-        });
+    <footer class="footer">
+        <span>© 2026 TargetResizer</span>
+        <span class="footer-dot">•</span>
+        <span>Przetwarzanie odbywa się w całości w Twojej przeglądarce</span>
+    </footer>
 
-        function handleFile(file) {
-            selectedFile = file;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                previewImg.src = e.target.result;
-                previewImg.style.display = 'block';
-                dropContent.style.display = 'none'; // Ukrycie tekstu "Drag & drop"
-                // Zmiana na KB: dzielone tylko przez 1024
-                fileInfo.innerText = `Original Size: ${(file.size / 1024).toFixed(1)} KB`;
-            }
-            reader.readAsDataURL(file);
+</div>
+
+<script>
+    const fileInput = document.getElementById('fileInput');
+    const dropZone = document.getElementById('dropZone');
+    let selectedFile = null;
+
+    dropZone.onclick = () => fileInput.click();
+    fileInput.onchange = (e) => { if(e.target.files[0]) handleFile(e.target.files[0]); };
+    
+    dropZone.ondragover = (e) => { e.preventDefault(); dropZone.classList.add('active'); };
+    dropZone.ondragleave = () => { dropZone.classList.remove('active'); };
+    dropZone.ondrop = (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('active');
+        if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+    };
+
+    function handleFile(file) {
+        selectedFile = file;
+        document.getElementById('dropContent').innerHTML = `
+            <div class="drop-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;stroke:var(--accent)">
+                    <polyline points="20 6 9 17 4 12"/>
+                </svg>
+            </div>
+            <div class="drop-title">${file.name}</div>
+            <div class="drop-sub">Kliknij, aby zmienić plik</div>
+        `;
+        document.getElementById('originalImg').src = URL.createObjectURL(file);
+        document.getElementById('originalInfo').innerText = `${(file.size/1024).toFixed(1)} KB`;
+        document.getElementById('compressedImg').src = '';
+        document.getElementById('compressedInfo').innerText = '';
+        document.getElementById('previewContainer').style.display = 'grid';
+        document.getElementById('resultArea').style.display = 'none';
+    }
+
+    async function processImage() {
+        if(!selectedFile) return alert("Wybierz plik!");
+        
+        const targetKB = parseFloat(document.getElementById('targetSize').value);
+        const btn = document.getElementById('compressBtn');
+        btn.disabled = true;
+        btn.innerText = "Przetwarzanie…";
+        document.getElementById('progressWrap').style.display = 'block';
+        document.getElementById('resultArea').style.display = 'none';
+
+        const targetBytes = targetKB * 1024;
+        const img = new Image();
+        img.src = URL.createObjectURL(selectedFile);
+        await new Promise(r => img.onload = r);
+
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+        let width = img.width;
+        let height = img.height;
+        let scale = 1.0;
+        let finalBlob = null;
+
+        while (scale > 0.05) {
+            canvas.width = Math.floor(width * scale);
+            canvas.height = Math.floor(height * scale);
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0,0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            let testBlob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.1));
+            if (testBlob.size <= targetBytes) break;
+            scale -= 0.1;
         }
 
-        // --- LOGIKA KOMPRESJI ---
-        async function compressImage() {
-            // Pobranie wartości w KB
-            const targetKB = parseFloat(document.getElementById('targetSize').value);
-            const status = document.getElementById('status');
-            const resultArea = document.getElementById('resultArea');
-            const dlBtn = document.getElementById('downloadBtn');
-
-            if (!selectedFile) { alert("Please select or drop an image first!"); return; }
-
-            resultArea.style.display = 'block';
-            status.style.color = "#6b7280";
-            status.innerText = "Processing image...";
-            dlBtn.style.display = 'none';
-
-            const bitmap = await createImageBitmap(selectedFile);
-            const canvas = document.createElement('canvas');
-            canvas.width = bitmap.width;
-            canvas.height = bitmap.height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(bitmap, 0, 0);
-
-            let quality = 1.0;
-            let blob;
-            let currentSizeKB = 0;
-
-            // Pętla kompresji
-            while (quality > 0.01) {
-                blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
-                // Obliczenie rozmiaru w KB
-                currentSizeKB = blob.size / 1024;
-                
-                // Jeśli osiągnęliśmy cel (lub jesteśmy poniżej), przerwij pętlę
-                if (currentSizeKB <= targetKB) break;
-                
-                // Zmniejsz jakość
-                quality -= 0.03;
+        let low = 0.01, high = 1.0;
+        for (let i = 0; i < 10; i++) {
+            let mid = (low + high) / 2;
+            let blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', mid));
+            if (blob.size <= targetBytes) {
+                finalBlob = blob;
+                low = mid;
+            } else {
+                high = mid;
             }
-
-            status.style.color = "#10b981";
-            status.innerText = `Success! Target reached.`;
-            dlBtn.href = URL.createObjectURL(blob);
-            dlBtn.download = `target_resizer_${currentSizeKB.toFixed(0)}KB.jpg`;
-            dlBtn.innerText = `Download (${currentSizeKB.toFixed(1)} KB)`;
-            dlBtn.style.display = 'block';
         }
-    </script>
+
+        if(!finalBlob) finalBlob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.01));
+
+        const compressedUrl = URL.createObjectURL(finalBlob);
+        document.getElementById('compressedImg').src = compressedUrl;
+        document.getElementById('compressedInfo').innerText = `${(finalBlob.size/1024).toFixed(1)} KB`;
+        
+        document.getElementById('progressWrap').style.display = 'none';
+        document.getElementById('resultArea').style.display = 'flex';
+        document.getElementById('status').innerText = `${(selectedFile.size/1024).toFixed(0)} KB → ${(finalBlob.size/1024).toFixed(1)} KB`;
+        
+        const dl = document.getElementById('downloadBtn');
+        dl.href = compressedUrl;
+        dl.download = `compressed_${selectedFile.name.split('.')[0]}.jpg`;
+        
+        btn.disabled = false;
+        btn.innerText = "Kompresuj";
+    }
+</script>
 </body>
 </html>
